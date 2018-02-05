@@ -69,9 +69,10 @@ namespace dogapi_Mattias_Lundh.Controllers
 
         private void DeleteDog(string id)
         {
-            if (System.IO.File.Exists(Environment.CurrentDirectory + @"/DogFiles/" + id + @".json"))
+            string path = Environment.CurrentDirectory + @"/DogFiles/" + id + @".json";
+            if (System.IO.File.Exists(path))
             {
-                System.IO.File.Delete(Environment.CurrentDirectory + @"/DogFiles/" + id + @".json");
+                System.IO.File.Delete(path);
             }
             else
             {
