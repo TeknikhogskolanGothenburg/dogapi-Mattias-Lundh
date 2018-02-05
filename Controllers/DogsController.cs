@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using System.IO;
 
 namespace dogapi_Mattias_Lundh.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/{controller}")]
     public class ValuesController : Controller
     {
         // GET api/values
@@ -20,7 +21,8 @@ namespace dogapi_Mattias_Lundh.Controllers
         [HttpGet("{id}")]
         public string Get(int id)
         {
-            return "value";
+            string result = Convert.ToString(System.IO.File.ReadAllLines(@"/DogFiles/" + id + ".json"));
+            return result;
         }
 
         // POST api/values
