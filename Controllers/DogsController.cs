@@ -10,15 +10,15 @@ namespace dogapi_Mattias_Lundh.Controllers
     [Route("[controller]")]
     public class DogsController : Controller
     {
-        // GET api/values
+        // GET Dogs/
         [HttpGet]
         public IEnumerable<string> Get()
         {
             Response.ContentType = "application/json";
-            return GetDogs().Select(d => d[1].Substring(d[1].IndexOf("breedName") + 12, d[1].Length - 3 - (d[1].Substring(0, d[1].IndexOf("breedName") + 12).Length)));
+            return GetDogs();
         }
 
-        // GET api/values/5
+        // GET Dogs/[breedName]
         [HttpGet("{id}")]
         public List<string> Get(string id)
         {
@@ -26,13 +26,52 @@ namespace dogapi_Mattias_Lundh.Controllers
             return GetDog(id);
         }
 
-        // POST api/values
+        // POST Dogs/[breedName]
         [HttpPost]
-        public void Post([FromBody]FormCollection collection)
+        public void Post(IFormCollection collection)
         {
-            if (collection["BreedName"] != "" && collection["WikipediaUrl"] != "" && collection["Description"] != "")
+            CreateDog(collection);
+        }
+
+        // PUT Dogs/[breedName]
+        [HttpPut("{id}")]
+        public void Put(string id, IFormCollection collection)
+        {
+            UpdateDog(id, collection);
+        }
+
+        // DELETE Dogs/[breedName]
+        [HttpDelete("{id}")]
+        public void Delete(string id)
+        {
+            DeleteDog(id);
+        }
+
+        // DELETE Dogs/
+        [HttpDelete]
+        public void Delete()
+        {
+            DeleteDogs();
+        }
+
+        private void DeleteDogs()
+        {
+            List<string> dogs = FindAllFilePaths(@"/DogFiles/");
+            if(dogs.Count == 0)
             {
-                System.IO.File.Create(Environment.CurrentDirectory + @"/DogFiles/" + collection["BreedName"] + @".json");
+                Response.StatusCode = 400;
+            }
+            foreach (string dogFilePath in dogs)
+            {
+                System.IO.File.Delete(dogFilePath);
+            }
+        }
+
+        private void DeleteDog(string id)
+        {
+            if (System.IO.File.Exists(Environment.CurrentDirectory + @"/DogFiles/" + id + @".json"))
+            {
+                System.IO.File.Delete(Environment.CurrentDirectory + @"/DogFiles/" + id + @".json");
             }
             else
             {
@@ -40,19 +79,58 @@ namespace dogapi_Mattias_Lundh.Controllers
             }
         }
 
-        // PUT api/values/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
+        private void UpdateDog(string id, IFormCollection collection)
         {
+            if (System.IO.File.Exists(Environment.CurrentDirectory + @"/DogFiles/" + id + @".json"))
+            {
+                List<string> targetDog = System.IO.File.ReadAllLines(Environment.CurrentDirectory + @"/DogFiles/" + id + @".json").ToList();
+                if (collection.ContainsKey("BreedName"))
+                {
+                    targetDog[1] = "\"breedName\":\"" + collection["BreedName"] + "\", ";
+                }
+                if (collection.ContainsKey("WikipediaUrl"))
+                {
+                    targetDog[2] = "\"wikipediaUrl\":\"" + collection["WikipediaUrl"] + "\", ";
+                }
+                if (collection.ContainsKey("Description"))
+                {
+                    targetDog[3] = "\"description\":\"" + collection["Description"] + "\" ";
+                }
+                System.IO.File.Delete(Environment.CurrentDirectory + @"/DogFiles/" + id + @".json");
+                System.IO.File.WriteAllLines(Environment.CurrentDirectory + @"/DogFiles/" + id + @".json", targetDog);
+            }
+            else
+            {
+                Response.StatusCode = 400;
+            }
         }
 
-        // DELETE api/values/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        private void CreateDog(IFormCollection collection)
         {
+            if (collection["BreedName"] != "" && collection["WikipediaUrl"] != "" && collection["Description"] != "")
+            {
+                if (!System.IO.File.Exists(Environment.CurrentDirectory + @"/DogFiles/" + collection["BreedName"] + @".json"))
+                {
+                    List<string> newDog = new List<string> {
+                     "{",
+                     "\"breedName\":\""+ collection["BreedName"] +"\", ",   
+                     "\"wikipediaUrl\":\"" + collection["WikipediaUrl"] + "\", ",
+                     "\"description\":\"" + collection["Description"] +"\" ",
+                     "}"};
+                    System.IO.File.WriteAllLines(Environment.CurrentDirectory + @"/DogFiles/" + collection["BreedName"] + @".json", newDog);
+                }
+                else
+                {
+                    Response.StatusCode = 409;
+                }
+            }
+            else
+            {
+                Response.StatusCode = 400;
+            }
         }
 
-        private List<List<string>> GetDogs()
+        private IEnumerable<string> GetDogs()
         {
             List<string> dogPaths = FindAllFilePaths(@"/DogFiles/");
             List<List<string>> dogs = new List<List<string>>();
@@ -62,7 +140,8 @@ namespace dogapi_Mattias_Lundh.Controllers
                 dog.AddRange(System.IO.File.ReadAllLines(path));
                 dogs.Add(dog);
             }
-            return dogs;
+
+            return dogs.Select(d => d[1].Substring(d[1].IndexOf("breedName") + 12, d[1].Length - 3 - (d[1].Substring(0, d[1].IndexOf("breedName") + 12).Length)));
         }
 
         private List<string> GetDog(string request)
@@ -76,12 +155,12 @@ namespace dogapi_Mattias_Lundh.Controllers
                 int index = path.IndexOf(@"DogFiles/") + 9;
                 dogs.Add(path.Substring(index, path.Length - index - 5), dog);
             }
-
-            if (dogs[request] != null)
+            if (dogs.ContainsKey(request))
             {
                 return dogs[request];
             }
-            throw new Exception("invalid dog, no recource found");
+            Response.StatusCode = 400;
+            return new List<string>();
         }
 
         private List<string> FindAllFilePaths(string dir)
