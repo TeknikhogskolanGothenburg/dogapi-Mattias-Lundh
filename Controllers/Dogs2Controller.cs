@@ -55,6 +55,10 @@ namespace dogapi_Mattias_Lundh.Controllers
         public void Put(string id, [FromBody]Dog dog)
         {
             string path = Environment.CurrentDirectory + "\\DogFiles\\" + id + ".json";
+            //if(System.IO.Directory.GetFiles("DogFiles", "*.json").Select(s => s.Contains(id)).First())
+            //{
+
+            //}
             if (GetAllDogs().Select(d => d.BreedName).Contains(id))
             {
                 Dog targetDog = GetAllDogs().Select(d => d).Where(d => d.BreedName == id).First();
